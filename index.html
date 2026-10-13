@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Restaurant Kiosk</title>
+  <style>
+    :root {
+      --primary: #e63946;
+      --primary-dark: #c1121f;
+      --secondary: #1d3557;
+      --accent: #f4a261;
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #6c757d;
+      --success: #2a9d8f;
+      --danger: #e63946;
+      --border: #dee2e6;
+      --radius: 16px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --touch-min: 56px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    /* Prevent text selection and context menu for kiosk security */
+    body {
+      overscroll-behavior: none;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+      min-height: var(--touch-min);
+      min-width: var(--touch-min);
+      border-radius: 12px;
+      font-weight: 600;
+      transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ========== SCREENS ========== */
+    .screen {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    .header-brand img {
+      height: 48px;
+      width: auto;
+      border-radius: 8px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      border-radius: 12px;
+      font-size: 1.4rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      padding: 0 24px;
+      font-size: 1.1rem;
+    }
+
+    .btn-primary:hover, .btn-primary:focus {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+      padding: 0 20px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text);
+      padding: 0 20px;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+      padding: 0 24px;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      padding: 0 20px;
+    }
+
+    .btn-large {
+      min-height: 72px;
+      font-size: 1.3rem;
+      padding: 0 32px;
+      border-radius: 16px;
+    }
+
+    /* ========== WELCOME ========== */
+    #welcome {
+      background: linear-gradient(160deg, var(--secondary) 0%, #0d1b2a 100%);
+      color: white;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .welcome-logo {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .welcome-logo img {
+      max-height: 120px;
+      max-width: 280px;
+      object-fit: contain;
+    }
+
+    .welcome-title {
+      font-size: 2.8rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .welcome-sub {
+      font-size: 1.3rem;
+      opacity: 0.85;
+      margin-bottom: 48px;
+    }
+
+    .lang-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .lang-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-size: 1.1rem;
+      border: 2px solid transparent;
+    }
+
+    .lang-btn.active {
+      background: white;
+      color: var(--secondary);
+      border-color: white;
+    }
+
+    /* ========== MENU ========== */
+    .menu-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .categories {
+      width: 200px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 12px 0;
+    }
+
+    .cat-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 16px 8px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      border-radius: 0;
+      border-left: 4px solid transparent;
+    }
+
+    .cat-btn.active {
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      color: var(--primary);
+      border-left-color: var(--primary);
+      font-weight: 700;
+    }
+
+    .cat-btn .icon {
+      font-size: 1.8rem;
+    }
+
+    .menu-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: var(--secondary);
+    }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .item-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    .item-card:active {
+      border-color: var(--primary);
+    }
+
+    .item-img {
+      height: 120px;
+      background: linear-gradient(135deg, #f1f3f5, #e9ecef);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+    }
+
+    .item-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .item-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--accent);
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .item-body {
+      padding: 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+
+    .item-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .item-price {
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: var(--secondary);
+    }
+
+    .add-btn {
+      background: var(--primary);
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Cart sidebar */
+    .cart-panel {
+      width: 340px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .cart-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 800;
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cart-count {
+      background: var(--primary);
+      color: white;
+      font-size: 0.85rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .cart-empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 20px;
+      font-size: 1.05rem;
+    }
+
+    .cart-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .cart-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cart-item-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .cart-item-mods {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .cart-item-price {
+      font-weight: 700;
+      color: var(--secondary);
+      margin-top: 4px;
+    }
+
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .qty-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qty-val {
+      min-width: 28px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .cart-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .cart-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .cart-total {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--secondary);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 2px solid var(--border);
+    }
+
+    .checkout-btn {
+      width: 100%;
+      margin-top: 16px;
+      min-height: 64px;
+      font-size: 1.25rem;
+    }
+
+    /* ========== MODAL / ITEM CUSTOMIZE ========== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+
+    .modal-close {
+      width: 48px;
+      height: 48px;
+      background: var(--bg);
+      border-radius: 12px;
+      font-size: 1.5rem;
+    }
+
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-footer button {
+      flex: 1;
+    }
+
+    .option-group {
+      margin-bottom: 24px;
+    }
+
+    .option-label {
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 1.05rem;
+    }
+
+    .option-label .req {
+      color: var(--danger);
+      font-size: 0.85rem;
+    }
+
+    .option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg);
+      border-radius: 12px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      min-height: 56px;
+    }
+
+    .option-item.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 10%, white);
+    }
+
+    .option-item input {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--primary);
+    }
+
+    .option-name {
+      flex: 1;
+      font-weight: 600;
+    }
+
+    .option-price {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* ========== CHECKOUT ========== */
+    #checkout .checkout-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .order-summary {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .pay-methods {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .pay-btn {
+      padding: 24px;
+      background: var(--surface);
+      border: 3px solid var(--border);
+      border-radius: 16px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pay-btn.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 8%, white);
+    }
+
+    .pay-btn .icon {
+      font-size: 2rem;
+    }
+
+    /* ========== CONFIRMATION ========== */
+    #confirm {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      background: linear-gradient(160deg, var(--success) 0%, #1a7a6d 100%);
+      color: white;
+    }
+
+    .confirm-number {
+      font-size: 5rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      margin: 24px 0;
+      background: rgba(255,255,255,0.2);
+      padding: 16px 48px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    .confirm-msg {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .confirm-sub {
+      opacity: 0.9;
+      font-size: 1.15rem;
+      margin-bottom: 40px;
+    }
+
+    /* ========== ADMIN ========== */
+    #admin-login, #admin {
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    .admin-box {
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    }
+
+    .admin-box h2 {
+      margin-bottom: 8px;
+      font-size: 1.6rem;
+    }
+
+    .admin-box p {
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+
+    .pin-display {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .pin-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #334155;
+      border: 2px solid #475569;
+    }
+
+    .pin-dot.filled {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .pin-key {
+      height: 64px;
+      background: #334155;
+      color: white;
+      font-size: 1.5rem;
+      border-radius: 12px;
+    }
+
+    .pin-key:active {
+      background: #475569;
+    }
+
+    .admin-nav {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+
+    .admin-tab {
+      padding: 12px 20px;
+      background: transparent;
+      color: #94a3b8;
+      border-radius: 10px;
+      white-space: nowrap;
+      font-size: 1rem;
+    }
+
+    .admin-tab.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .admin-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .admin-section {
+      display: none;
+    }
+
+    .admin-section.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #cbd5e1;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      color: white;
+      font-size: 1rem;
+      min-height: 52px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .color-input-wrap {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .color-input-wrap input[type="color"] {
+      width: 56px;
+      height: 48px;
+      padding: 4px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .admin-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .admin-item {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .admin-item-info {
+      flex: 1;
+    }
+
+    .admin-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 52px;
+      height: 30px;
+      background: #475569;
+      border-radius: 999px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .toggle.on {
+      background: var(--success);
+    }
+
+    .toggle::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle.on::after {
+      transform: translateX(22px);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.3s;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .idle-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: white;
+      text-align: center;
+    }
+
+    .idle-overlay.active {
+      display: flex;
+    }
+
+    .idle-overlay h2 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+
+    /* Accessibility focus */
+    button:focus-visible,
+    input:focus-visible,
+    .option-item:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Responsive adjustments for smaller kiosks / tablets */
+    @media (max-width: 900px) {
+      .categories {
+        width: 100px;
+      }
+      .cat-btn {
+        font-size: 0.8rem;
+        padding: 12px 4px;
+      }
+      .cart-panel {
+        width: 280px;
+      }
+      .items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+    }
+
+    @media (max-width: 700px) {
+      .menu-layout {
+        flex-direction: column;
+      }
+      .categories {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 8px;
+      }
+      .cat-btn {
+        flex-direction: row;
+        width: auto;
+        padding: 12px 16px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        white-space: nowrap;
+      }
+      .cat-btn.active {
+        border-left: none;
+        border-bottom-color: var(--primary);
+      }
+      .cart-panel {
+        width: 100%;
+        max-height: 40vh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- IDLE TIMEOUT OVERLAY -->
+  <div id="idle-overlay" class="idle-overlay" role="dialog" aria-modal="true" aria-labelledby="idle-title">
+    <h2 id="idle-title">Still there?</h2>
+    <p style="font-size:1.2rem;margin-bottom:32px;opacity:0.9;">Touch the screen to continue your order</p>
+    <button class="btn-primary btn-large" id="idle-continue">Continue Order</button>
+    <button class="btn-outline btn-large" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.4);" id="idle-cancel">Start Over</button>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ========== WELCOME SCREEN ========== -->
+  <div id="welcome" class="screen active" role="main">
+    <div class="welcome-logo" id="welcome-logo">🍔</div>
+    <h1 class="welcome-title" id="welcome-title">Welcome</h1>
+    <p class="welcome-sub" id="welcome-sub">Touch to start your order</p>
+    <div class="lang-row" id="lang-row" role="group" aria-label="Language selection">
+      <button class="lang-btn active" data-lang="en">English</button>
+      <button class="lang-btn" data-lang="es">Español</button>
+      <button class="lang-btn" data-lang="fr">Français</button>
+    </div>
+    <button class="btn-primary btn-large" id="start-order-btn" style="min-width:280px;">Start Order</button>
+    <button class="btn-icon" id="admin-entry" style="position:absolute;bottom:20px;right:20px;opacity:0.25;width:48px;height:48px;" aria-label="Admin access" title="Admin">⚙️</button>
+  </div>
+
+  <!-- ========== MENU SCREEN ========== -->
+  <div id="menu" class="screen" role="main">
+    <header class="header">
+      <div class="header-brand">
+        <span id="brand-logo">🍔</span>
+        <span id="brand-name">Restaurant</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-outline" id="cancel-order-btn">Cancel</button>
+      </div>
+    </header>
+    <div class="menu-layout">
+      <nav class="categories" id="categories" role="navigation" aria-label="Menu categories"></nav>
+      <div class="menu-content">
+        <h2 class="section-title" id="section-title">Menu</h2>
+        <div class="items-grid" id="items-grid" role="list"></div>
+      </div>
+      <aside class="cart-panel" aria-label="Your order">
+        <div class="cart-header">
+          <span>Your Order</span>
+          <span class="cart-count" id="cart-count">0</span>
+        </div>
+        <div class="cart-items" id="cart-items">
+          <div class="cart-empty">Your cart is empty.<br>Tap an item to add it.</div>
+        </div>
+        <div class="cart-footer">
+          <div class="cart-row"><span>Subtotal</span><span id="cart-subtotal">$0.00</span></div>
+          <div class="cart-row"><span>Tax</span><span id="cart-tax">$0.00</span></div>
+          <div class="cart-row cart-total"><span>Total</span><span id="cart-total">$0.00</span></div>
+          <button class="btn-primary checkout-btn" id="checkout-btn" disabled>Checkout</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ========== ITEM CUSTOMIZE MODAL ========== -->
+  <div id="item-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-item-name">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-item-name">Item</h2>
+        <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn-outline" id="modal-cancel">Cancel</button>
+        <button class="btn-primary" id="modal-add">Add to Order · $0.00</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CHECKOUT SCREEN ========== -->
+  <div id="checkout" class="screen" role="main">
+    <header class="header">
+      <div class="header-brand">
+        <span id="brand-logo-co">🍔</span>
+        <span>Checkout</span>
+      </div>
+      <button class="btn-outline" id="back-to-menu">← Back to Menu</button>
+    </header>
+    <div class="checkout-body">
+      <h2 class="section-title">Order Summary</h2>
+      <div class="order-summary" id="order-summary"></div>
+      <h2 class="section-title">Payment Method</h2>
+      <div class="pay-methods" role="group" aria-label="Payment method">
+        <button class="pay-btn selected" data-pay="card">
+          <span class="icon">💳</span>
+          Card
+        </button>
+        <button class="pay-btn" data-pay="cash">
+          <span class="icon">💵</span>
+          Pay at Counter
+        </button>
+      </div>
+      <button class="btn-success btn-large" id="place-order-btn" style="width:100%;">Place Order</button>
+    </div>
+  </div>
+
+  <!-- ========== CONFIRMATION ========== -->
+  <div id="confirm" class="screen" role="main">
+    <div style="font-size:4rem;margin-bottom:8px;">✅</div>
+    <p class="confirm-msg" id="confirm-msg">Order Confirmed!</p>
+    <p class="confirm-sub" id="confirm-sub">Please wait for your number</p>
+    <div class="confirm-number" id="order-number">A42</div>
+    <p style="opacity:0.85;margin-bottom:32px;" id="confirm-hint">Show this number at the counter</p>
+    <button class="btn-primary btn-large" id="new-order-btn" style="background:white;color:var(--success);">New Order</button>
+  </div>
+
+  <!-- ========== ADMIN LOGIN ========== -->
+  <div id="admin-login" class="screen" role="main" style="align-items:center;justify-content:center;">
+    <div class="admin-box">
+      <h2>Admin Access</h2>
+      <p>Enter the 4-digit PIN to continue</p>
+      <div class="pin-display" id="pin-display" aria-live="polite">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+      <div class="pin-pad" id="pin-pad">
+        <button class="pin-key" data-key="1">1</button>
+        <button class="pin-key" data-key="2">2</button>
+        <button class="pin-key" data-key="3">3</button>
+        <button class="pin-key" data-key="4">4</button>
+        <button class="pin-key" data-key="5">5</button>
+        <button class="pin-key" data-key="6">6</button>
+        <button class="pin-key" data-key="7">7</button>
+        <button class="pin-key" data-key="8">8</button>
+        <button class="pin-key" data-key="9">9</button>
+        <button class="pin-key" data-key="clear">C</button>
+        <button class="pin-key" data-key="0">0</button>
+        <button class="pin-key" data-key="ok">✓</button>
+      </div>
+      <p id="pin-error" style="color:#f87171;text-align:center;margin-top:16px;min-height:24px;"></p>
+      <button class="btn-outline" id="admin-back" style="width:100%;margin-top:16px;color:#94a3b8;border-color:#475569;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN PANEL ========== -->
+  <div id="admin" class="screen" role="main">
+    <header class="header" style="background:#1e293b;border-color:#334155;">
+      <div class="header-brand" style="color:white;">
+        <span>⚙️ Admin</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-outline" id="admin-logout" style="color:#94a3b8;border-color:#475569;">Exit Admin</button>
+      </div>
+    </header>
+    <nav class="admin-nav" role="tablist">
+      <button class="admin-tab active" data-tab="branding" role="tab">Branding</button>
+      <button class="admin-tab" data-tab="menu" role="tab">Menu</button>
+      <button class="admin-tab" data-tab="settings" role="tab">Settings</button>
+      <button class="admin-tab" data-tab="security" role="tab">Security</button>
+    </nav>
+    <div class="admin-content">
+      <!-- Branding -->
+      <div class="admin-section active" id="tab-branding">
+        <h2 style="margin-bottom:20px;">Restaurant Branding</h2>
+        <div class="form-group">
+          <label for="cfg-name">Restaurant Name</label>
+          <input type="text" id="cfg-name" maxlength="40" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-tagline">Welcome Tagline</label>
+          <input type="text" id="cfg-tagline" maxlength="80" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-logo">Logo (emoji or short text)</label>
+          <input type="text" id="cfg-logo" maxlength="8" autocomplete="off" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Primary Color</label>
+            <div class="color-input-wrap">
+              <input type="color" id="cfg-primary" />
+              <input type="text" id="cfg-primary-hex" maxlength="7" style="flex:1;" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Secondary Color</label>
+            <div class="color-input-wrap">
+              <input type="color" id="cfg-secondary" />
+              <input type="text" id="cfg-secondary-hex" maxlength="7" style="flex:1;" />
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" id="save-branding" style="margin-top:12px;">Save Branding</button>
+      </div>
+
+      <!-- Menu -->
+      <div class="admin-section" id="tab-menu">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h2>Menu Items</h2>
+          <button class="btn-primary" id="add-item-btn">+ Add Item</button>
+        </div>
+        <div class="admin-item-list" id="admin-item-list"></div>
+      </div>
+
+      <!-- Settings -->
+      <div class="admin-section" id="tab-settings">
+        <h2 style="margin-bottom:20px;">Store Settings</h2>
+        <div class="form-group">
+          <label for="cfg-tax">Tax Rate (%)</label>
+          <input type="number" id="cfg-tax" min="0" max="30" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-currency">Currency Symbol</label>
+          <input type="text" id="cfg-currency" maxlength="3" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-idle">Idle Timeout (seconds)</label>
+          <input type="number" id="cfg-idle" min="30" max="600" step="10" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-order-prefix">Order Number Prefix</label>
+          <input type="text" id="cfg-order-prefix" maxlength="3" />
+        </div>
+        <button class="btn-primary" id="save-settings">Save Settings</button>
+      </div>
+
+      <!-- Security -->
+      <div class="admin-section" id="tab-security">
+        <h2 style="margin-bottom:20px;">Security</h2>
+        <div class="form-group">
+          <label for="cfg-pin">Admin PIN (4 digits)</label>
+          <input type="password" id="cfg-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="cfg-pin-confirm">Confirm New PIN</label>
+          <input type="password" id="cfg-pin-confirm" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
+        </div>
+        <button class="btn-primary" id="save-pin">Update PIN</button>
+        <hr style="border-color:#334155;margin:32px 0;" />
+        <h3 style="margin-bottom:12px;">Data</h3>
+        <button class="btn-outline" id="export-config" style="margin-right:8px;color:#94a3b8;border-color:#475569;">Export Config</button>
+        <button class="btn-outline" id="import-config" style="color:#94a3b8;border-color:#475569;">Import Config</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;" />
+        <button class="btn-danger" id="reset-config" style="margin-top:16px;display:block;">Reset to Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ADD/EDIT ITEM MODAL (Admin) ========== -->
+  <div id="edit-item-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="edit-item-title">Edit Item</h2>
+        <button class="modal-close" id="edit-item-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="ei-name">Name</label>
+          <input type="text" id="ei-name" maxlength="50" />
+        </div>
+        <div class="form-group">
+          <label for="ei-desc">Description</label>
+          <textarea id="ei-desc" rows="2" maxlength="120"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ei-price">Price</label>
+            <input type="number" id="ei-price" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="ei-category">Category</label>
+            <select id="ei-category"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="ei-emoji">Emoji / Icon</label>
+          <input type="text" id="ei-emoji" maxlength="4" />
+        </div>
+        <div class="form-group">
+          <label for="ei-badge">Badge (optional, e.g. New, Spicy)</label>
+          <input type="text" id="ei-badge" maxlength="12" />
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="ei-available" checked style="width:auto;margin-right:8px;" />
+            Available
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Modifiers (JSON array – advanced)</label>
+          <textarea id="ei-modifiers" rows="4" placeholder='[{"name":"Size","required":true,"options":[{"name":"Regular","price":0},{"name":"Large","price":1.5}]}]'></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" id="edit-item-cancel">Cancel</button>
+        <button class="btn-primary" id="edit-item-save">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== DEFAULT CONFIG ==========
+    const DEFAULT_CONFIG = {
+      name: "BurgerBite",
+      tagline: "Touch to start your order",
+      logo: "🍔",
+      primary: "#e63946",
+      secondary: "#1d3557",
+      taxRate: 8.25,
+      currency: "$",
+      idleTimeout: 90,
+      orderPrefix: "A",
+      pin: "1234",
+      languages: ["en", "es", "fr"],
+      categories: [
+        { id: "burgers", name: "Burgers", icon: "🍔" },
+        { id: "chicken", name: "Chicken", icon: "🍗" },
+        { id: "sides", name: "Sides", icon: "🍟" },
+        { id: "drinks", name: "Drinks", icon: "🥤" },
+        { id: "desserts", name: "Desserts", icon: "🍦" }
+      ],
+      items: [
+        {
+          id: "classic-burger",
+          name: "Classic Burger",
+          desc: "Beef patty, lettuce, tomato, onion, special sauce",
+          price: 6.99,
+          category: "burgers",
+          emoji: "🍔",
+          badge: "",
+          available: true,
+          modifiers: [
+            {
+              name: "Size",
+              required: true,
+              options: [
+                { name: "Regular", price: 0 },
+                { name: "Large", price: 1.50 }
+              ]
+            },
+            {
+              name: "Extras",
+              required: false,
+              multi: true,
+              options: [
+                { name: "Cheese", price: 0.75 },
+                { name: "Bacon", price: 1.25 },
+                { name: "Avocado", price: 1.50 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "double-burger",
+          name: "Double Smash",
+          desc: "Two smash patties, American cheese, pickles",
+          price: 9.49,
+          category: "burgers",
+          emoji: "🍔",
+          badge: "Popular",
+          available: true,
+          modifiers: [
+            {
+              name: "Size",
+              required: true,
+              options: [
+                { name: "Regular", price: 0 },
+                { name: "Large", price: 1.75 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "crispy-chicken",
+          name: "Crispy Chicken Sandwich",
+          desc: "Buttermilk fried chicken, pickles, mayo",
+          price: 7.49,
+          category: "chicken",
+          emoji: "🍗",
+          badge: "",
+          available: true,
+          modifiers: [
+            {
+              name: "Spice Level",
+              required: true,
+              options: [
+                { name: "Mild", price: 0 },
+                { name: "Hot", price: 0 },
+                { name: "Extra Hot", price: 0.50 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "nuggets",
+          name: "Chicken Nuggets",
+          desc: "Crispy golden nuggets with dipping sauce",
+          price: 5.99,
+          category: "chicken",
+          emoji: "🍗",
+          badge: "",
+          available: true,
+          modifiers: [
+            {
+              name: "Quantity",
+              required: true,
+              options: [
+                { name: "6 pc", price: 0 },
+                { name: "10 pc", price: 2.50 },
+                { name: "20 pc", price: 6.00 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "fries",
+          name: "French Fries",
+          desc: "Crispy seasoned fries",
+          price: 3.49,
+          category: "sides",
+          emoji: "🍟",
+          badge: "",
+          available: true,
+          modifiers: [
+            {
+              name: "Size",
+              required: true,
+              options: [
+                { name: "Regular", price: 0 },
+                { name: "Large", price: 1.00 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "onion-rings",
+          name: "Onion Rings",
+          desc: "Beer-battered onion rings",
+          price: 4.29,
+          category: "sides",
+          emoji: "🧅",
+          badge: "New",
+          available: true,
+          modifiers: []
+        },
+        {
+          id: "soda",
+          name: "Soft Drink",
+          desc: "Fountain soda",
+          price: 2.49,
+          category: "drinks",
+          emoji: "🥤",
+          badge: "",
+          available: true,
+          modifiers: [
+            {
+              name: "Size",
+              required: true,
+              options: [
+                { name: "Small", price: 0 },
+                { name: "Medium", price: 0.50 },
+                { name: "Large", price: 1.00 }
+              ]
+            },
+            {
+              name: "Flavor",
+              required: true,
+              options: [
+                { name: "Cola", price: 0 },
+                { name: "Lemon-Lime", price: 0 },
+                { name: "Orange", price: 0 },
+                { name: "Root Beer", price: 0 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "shake",
+          name: "Milkshake",
+          desc: "Thick and creamy",
+          price: 4.99,
+          category: "drinks",
+          emoji: "🥤",
+          badge: "",
+          available: true,
+          modifiers: [
+            {
+              name: "Flavor",
+              required: true,
+              options: [
+                { name: "Vanilla", price: 0 },
+                { name: "Chocolate", price: 0 },
+                { name: "Strawberry", price: 0 }
+              ]
+            }
+          ]
+        },
+        {
+          id: "sundae",
+          name: "Hot Fudge Sundae",
+          desc: "Vanilla soft serve with hot fudge",
+          price: 3.99,
+          category: "desserts",
+          emoji: "🍦",
+          badge: "",
+          available: true,
+          modifiers: []
+        },
+        {
+          id: "cookie",
+          name: "Chocolate Chip Cookie",
+          desc: "Freshly baked",
+          price: 1.99,
+          category: "desserts",
+          emoji: "🍪",
+          badge: "",
+          available: true,
+          modifiers: []
+        }
+      ]
+    };
+
+    // ========== STATE ==========
+    let config = null;
+    let cart = [];
+    let currentCategory = null;
+    let currentItem = null;
+    let selectedModifiers = {};
+    let pinBuffer = "";
+    let pinAttempts = 0;
+    let pinLockedUntil = 0;
+    let adminSession = false;
+    let editingItemId = null;
+    let selectedPay = "card";
+    let orderCounter = parseInt(localStorage.getItem("kiosk_order_counter") || "41", 10);
+    let idleTimer = null;
+    let idleWarningTimer = null;
+    let currentLang = "en";
+
+    // i18n (basic)
+    const i18n = {
+      en: {
+        start: "Start Order",
+        cancel: "Cancel",
+        checkout: "Checkout",
+        yourOrder: "Your Order",
+        empty: "Your cart is empty.\nTap an item to add it.",
+        subtotal: "Subtotal",
+        tax: "Tax",
+        total: "Total",
+        addToOrder: "Add to Order",
+        placeOrder: "Place Order",
+        confirmed: "Order Confirmed!",
+        waitNumber: "Please wait for your number",
+        showNumber: "Show this number at the counter",
+        newOrder: "New Order",
+        backMenu: "← Back to Menu",
+        payCard: "Card",
+        payCash: "Pay at Counter",
+        stillThere: "Still there?",
+        continueOrder: "Continue Order",
+        startOver: "Start Over"
+      },
+      es: {
+        start: "Comenzar Pedido",
+        cancel: "Cancelar",
+        checkout: "Pagar",
+        yourOrder: "Tu Pedido",
+        empty: "Tu carrito está vacío.\nToca un artículo para agregarlo.",
+        subtotal: "Subtotal",
+        tax: "Impuesto",
+        total: "Total",
+        addToOrder: "Agregar",
+        placeOrder: "Confirmar Pedido",
+        confirmed: "¡Pedido Confirmado!",
+        waitNumber: "Espere su número",
+        showNumber: "Muestre este número en el mostrador",
+        newOrder: "Nuevo Pedido",
+        backMenu: "← Volver al Menú",
+        payCard: "Tarjeta",
+        payCash: "Pagar en Caja",
+        stillThere: "¿Sigues ahí?",
+        continueOrder: "Continuar Pedido",
+        startOver: "Empezar de Nuevo"
+      },
+      fr: {
+        start: "Commencer",
+        cancel: "Annuler",
+        checkout: "Payer",
+        yourOrder: "Votre Commande",
+        empty: "Votre panier est vide.\nTouchez un article pour l'ajouter.",
+        subtotal: "Sous-total",
+        tax: "Taxe",
+        total: "Total",
+        addToOrder: "Ajouter",
+        placeOrder: "Passer la Commande",
+        confirmed: "Commande Confirmée !",
+        waitNumber: "Veuillez attendre votre numéro",
+        showNumber: "Montrez ce numéro au comptoir",
+        newOrder: "Nouvelle Commande",
+        backMenu: "← Retour au Menu",
+        payCard: "Carte",
+        payCash: "Payer au Comptoir",
+        stillThere: "Toujours là ?",
+        continueOrder: "Continuer",
+        startOver: "Recommencer"
+      }
+    };
+
+    // ========== SECURITY HELPERS ==========
+    function sanitize(str) {
+      if (typeof str !== "string") return "";
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function safeParseJSON(str, fallback) {
+      try {
+        const parsed = JSON.parse(str);
+        return parsed ?? fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    // ========== STORAGE ==========
+    function loadConfig() {
+      const stored = localStorage.getItem("kiosk_config");
+      if (stored) {
+        const parsed = safeParseJSON(stored, null);
+        if (parsed && parsed.items && parsed.categories) {
+          config = { ...DEFAULT_CONFIG, ...parsed };
+          // Ensure pin is always a 4-digit string
+          if (!/^\d{4}$/.test(config.pin)) config.pin = "1234";
+          return;
+        }
+      }
+      config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      saveConfig();
+    }
+
+    function saveConfig() {
+      try {
+        localStorage.setItem("kiosk_config", JSON.stringify(config));
+      } catch (e) {
+        showToast("Could not save settings (storage full)");
+      }
+    }
+
+    // ========== THEME ==========
+    function applyTheme() {
+      document.documentElement.style.setProperty("--primary", config.primary);
+      document.documentElement.style.setProperty("--primary-dark", adjustColor(config.primary, -20));
+      document.documentElement.style.setProperty("--secondary", config.secondary);
+      document.getElementById("welcome-title").textContent = config.name;
+      document.getElementById("welcome-sub").textContent = config.tagline;
+      document.getElementById("welcome-logo").textContent = config.logo;
+      document.getElementById("brand-name").textContent = config.name;
+      document.getElementById("brand-logo").textContent = config.logo;
+      document.getElementById("brand-logo-co").textContent = config.logo;
+      document.title = config.name + " Kiosk";
+    }
+
+    function adjustColor(hex, amount) {
+      const num = parseInt(hex.replace("#", ""), 16);
+      const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+      const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount));
+      const b = Math.min(255, Math.max(0, (num & 0xff) + amount));
+      return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
+    }
+
+    // ========== SCREEN MANAGEMENT ==========
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      const el = document.getElementById(id);
+      if (el) el.classList.add("active");
+      resetIdleTimer();
+    }
+
+    // ========== IDLE TIMER ==========
+    function resetIdleTimer() {
+      clearTimeout(idleTimer);
+      clearTimeout(idleWarningTimer);
+      document.getElementById("idle-overlay").classList.remove("active");
+      if (document.getElementById("welcome").classList.contains("active") ||
+          document.getElementById("admin-login").classList.contains("active") ||
+          document.getElementById("admin").classList.contains("active") ||
+          document.getElementById("confirm").classList.contains("active")) {
+        return;
+      }
+      const ms = (config.idleTimeout || 90) * 1000;
+      idleWarningTimer = setTimeout(() => {
+        document.getElementById("idle-overlay").classList.add("active");
+      }, ms - 15000);
+      idleTimer = setTimeout(() => {
+        resetOrder();
+        showScreen("welcome");
+      }, ms);
+    }
+
+    // ========== CART ==========
+    function addToCart(item, modifiers, qty = 1) {
+      const modKey = JSON.stringify(modifiers);
+      const existing = cart.find(c => c.id === item.id && JSON.stringify(c.modifiers) === modKey);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        cart.push({
+          id: item.id,
+          name: item.name,
+          basePrice: item.price,
+          modifiers,
+          qty,
+          emoji: item.emoji
+        });
+      }
+      renderCart();
+      showToast(item.name + " added");
+    }
+
+    function updateQty(index, delta) {
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) cart.splice(index, 1);
+      renderCart();
+    }
+
+    function calcItemPrice(entry) {
+      let price = entry.basePrice;
+      Object.values(entry.modifiers).forEach(mod => {
+        if (Array.isArray(mod)) {
+          mod.forEach(o => { price += o.price || 0; });
+        } else if (mod) {
+          price += mod.price || 0;
+        }
+      });
+      return price * entry.qty;
+    }
+
+    function calcTotals() {
+      const subtotal = cart.reduce((s, e) => s + calcItemPrice(e), 0);
+      const tax = subtotal * (config.taxRate / 100);
+      return { subtotal, tax, total: subtotal + tax };
+    }
+
+    function formatMoney(n) {
+      return config.currency + n.toFixed(2);
+    }
+
+    function renderCart() {
+      const container = document.getElementById("cart-items");
+      const countEl = document.getElementById("cart-count");
+      const t = i18n[currentLang] || i18n.en;
+
+      countEl.textContent = cart.reduce((s, e) => s + e.qty, 0);
+
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="cart-empty">${t.empty.replace("\n", "<br>")}</div>`;
+        document.getElementById("checkout-btn").disabled = true;
+      } else {
+        container.innerHTML = cart.map((entry, i) => {
+          const modText = Object.entries(entry.modifiers)
+            .map(([k, v]) => {
+              if (Array.isArray(v)) return v.map(o => o.name).join(", ");
+              return v ? v.name : "";
+            })
+            .filter(Boolean)
+            .join(" · ");
+          return `
+            <div class="cart-item">
+              <div class="cart-item-info">
+                <div class="cart-item-name">${sanitize(entry.name)}</div>
+                ${modText ? `<div class="cart-item-mods">${sanitize(modText)}</div>` : ""}
+                <div class="cart-item-price">${formatMoney(calcItemPrice(entry))}</div>
+              </div>
+              <div class="qty-controls">
+                <button class="qty-btn" data-idx="${i}" data-delta="-1" aria-label="Decrease">−</button>
+                <span class="qty-val">${entry.qty}</span>
+                <button class="qty-btn" data-idx="${i}" data-delta="1" aria-label="Increase">+</button>
+              </div>
+            </div>`;
+        }).join("");
+        document.getElementById("checkout-btn").disabled = false;
+      }
+
+      const { subtotal, tax, total } = calcTotals();
+      document.getElementById("cart-subtotal").textContent = formatMoney(subtotal);
+      document.getElementById("cart-tax").textContent = formatMoney(tax);
+      document.getElementById("cart-total").textContent = formatMoney(total);
+
+      container.querySelectorAll(".qty-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          updateQty(parseInt(btn.dataset.idx, 10), parseInt(btn.dataset.delta, 10));
+        });
+      });
+    }
+
+    function resetOrder() {
+      cart = [];
+      selectedModifiers = {};
+      currentItem = null;
+      renderCart();
+      closeModal();
+    }
+
+    // ========== MENU RENDER ==========
+    function renderCategories() {
+      const nav = document.getElementById("categories");
+      nav.innerHTML = config.categories.map(c => `
+        <button class="cat-btn ${c.id === currentCategory ? "active" : ""}" data-cat="${c.id}">
+          <span class="icon">${c.icon}</span>
+          <span>${sanitize(c.name)}</span>
+        </button>
+      `).join("");
+
+      nav.querySelectorAll(".cat-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          currentCategory = btn.dataset.cat;
+          renderCategories();
+          renderItems();
+        });
+      });
+    }
+
+    function renderItems() {
+      const grid = document.getElementById("items-grid");
+      const title = document.getElementById("section-title");
+      const cat = config.categories.find(c => c.id === currentCategory);
+      title.textContent = cat ? cat.name : "Menu";
+
+      const items = config.items.filter(i => i.category === currentCategory && i.available);
+      if (items.length === 0) {
+        grid.innerHTML = `<p style="color:var(--text-muted);padding:40px;text-align:center;">No items in this category</p>`;
+        return;
+      }
+
+      grid.innerHTML = items.map(item => `
+        <article class="item-card" role="listitem" data-id="${item.id}" tabindex="0">
+          <div class="item-img">
+            ${item.emoji || "🍽️"}
+            ${item.badge ? `<span class="item-badge">${sanitize(item.badge)}</span>` : ""}
+          </div>
+          <div class="item-body">
+            <div class="item-name">${sanitize(item.name)}</div>
+            <div class="item-desc">${sanitize(item.desc || "")}</div>
+            <div class="item-footer">
+              <span class="item-price">${formatMoney(item.price)}</span>
+              <button class="add-btn" data-id="${item.id}" aria-label="Add ${sanitize(item.name)}">+</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      grid.querySelectorAll(".item-card").forEach(card => {
+        const open = () => openItemModal(card.dataset.id);
+        card.addEventListener("click", e => {
+          if (!e.target.classList.contains("add-btn")) open();
+        });
+        card.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        });
+      });
+      grid.querySelectorAll(".add-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          openItemModal(btn.dataset.id);
+        });
+      });
+    }
+
+    // ========== ITEM MODAL ==========
+    function openItemModal(id) {
+      currentItem = config.items.find(i => i.id === id);
+      if (!currentItem) return;
+      selectedModifiers = {};
+      const modal = document.getElementById("item-modal");
+      document.getElementById("modal-item-name").textContent = currentItem.name;
+
+      let html = `<p style="color:var(--text-muted);margin-bottom:20px;">${sanitize(currentItem.desc || "")}</p>`;
+      html += `<p style="font-weight:800;font-size:1.3rem;margin-bottom:20px;">${formatMoney(currentItem.price)}</p>`;
+
+      (currentItem.modifiers || []).forEach((mod, mi) => {
+        html += `<div class="option-group" data-mod-index="${mi}">
+          <div class="option-label">${sanitize(mod.name)} ${mod.required ? '<span class="req">Required</span>' : ""}</div>
+          <div class="option-list">`;
+        mod.options.forEach((opt, oi) => {
+          const inputType = mod.multi ? "checkbox" : "radio";
+          const name = `mod-${mi}`;
+          html += `
+            <label class="option-item" data-mi="${mi}" data-oi="${oi}">
+              <input type="${inputType}" name="${name}" value="${oi}" />
+              <span class="option-name">${sanitize(opt.name)}</span>
+              <span class="option-price">${opt.price > 0 ? "+" + formatMoney(opt.price) : ""}</span>
+            </label>`;
+        });
+        html += `</div></div>`;
+      });
+
+      document.getElementById("modal-body").innerHTML = html;
+      modal.classList.add("active");
+
+      // Pre-select first option of required single-select groups
+      (currentItem.modifiers || []).forEach((mod, mi) => {
+        if (mod.required && !mod.multi && mod.options.length) {
+          const first = modal.querySelector(`input[name="mod-${mi}"]`);
+          if (first) {
+            first.checked = true;
+            first.closest(".option-item").classList.add("selected");
+            selectedModifiers[mod.name] = mod.options[0];
+          }
+        }
+      });
+
+      modal.querySelectorAll(".option-item").forEach(label => {
+        label.addEventListener("click", (e) => {
+          // Let the input handle the click, then sync UI
+          setTimeout(() => {
+            const mi = parseInt(label.dataset.mi, 10);
+            const oi = parseInt(label.dataset.oi, 10);
+            const mod = currentItem.modifiers[mi];
+            const opt = mod.options[oi];
+            const input = label.querySelector("input");
+
+            if (mod.multi) {
+              if (!selectedModifiers[mod.name]) selectedModifiers[mod.name] = [];
+              if (input.checked) {
+                selectedModifiers[mod.name].push(opt);
+                label.classList.add("selected");
+              } else {
+                selectedModifiers[mod.name] = selectedModifiers[mod.name].filter(o => o.name !== opt.name);
+                label.classList.remove("selected");
+              }
+            } else {
+              // clear siblings
+              label.parentElement.querySelectorAll(".option-item").forEach(l => l.classList.remove("selected"));
+              label.classList.add("selected");
+              selectedModifiers[mod.name] = opt;
+            }
+            updateModalPrice();
+          }, 0);
+        });
+      });
+
+      updateModalPrice();
+      resetIdleTimer();
+    }
+
+    function updateModalPrice() {
+      if (!currentItem) return;
+      let price = currentItem.price;
+      Object.values(selectedModifiers).forEach(v => {
+        if (Array.isArray(v)) v.forEach(o => price += o.price || 0);
+        else if (v) price += v.price || 0;
+      });
+      const t = i18n[currentLang] || i18n.en;
+      document.getElementById("modal-add").textContent = `${t.addToOrder} · ${formatMoney(price)}`;
+    }
+
+    function closeModal() {
+      document.getElementById("item-modal").classList.remove("active");
+      currentItem = null;
+      selectedModifiers = {};
+    }
+
+    function validateModifiers() {
+      if (!currentItem) return false;
+      for (const mod of (currentItem.modifiers || [])) {
+        if (mod.required) {
+          const sel = selectedModifiers[mod.name];
+          if (!sel || (Array.isArray(sel) && sel.length === 0)) {
+            showToast(`Please select ${mod.name}`);
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // ========== CHECKOUT ==========
+    function renderCheckout() {
+      const { subtotal, tax, total } = calcTotals();
+      const summary = document.getElementById("order-summary");
+      summary.innerHTML = cart.map(e => {
+        const modText = Object.values(e.modifiers)
+          .flatMap(v => Array.isArray(v) ? v : (v ? [v] : []))
+          .map(o => o.name)
+          .join(", ");
+        return `<div class="cart-row" style="margin-bottom:10px;">
+          <span>${e.qty}× ${sanitize(e.name)}${modText ? ` <small style="color:var(--text-muted)">(${sanitize(modText)})</small>` : ""}</span>
+          <span>${formatMoney(calcItemPrice(e))}</span>
+        </div>`;
+      }).join("") + `
+        <div class="cart-row" style="margin-top:16px;"><span>Subtotal</span><span>${formatMoney(subtotal)}</span></div>
+        <div class="cart-row"><span>Tax (${config.taxRate}%)</span><span>${formatMoney(tax)}</span></div>
+        <div class="cart-row cart-total"><span>Total</span><span>${formatMoney(total)}</span></div>
+      `;
+    }
+
+    function placeOrder() {
+      orderCounter++;
+      localStorage.setItem("kiosk_order_counter", String(orderCounter));
+      const num = (config.orderPrefix || "A") + orderCounter;
+      document.getElementById("order-number").textContent = num;
+      const t = i18n[currentLang] || i18n.en;
+      document.getElementById("confirm-msg").textContent = t.confirmed;
+      document.getElementById("confirm-sub").textContent = t.waitNumber;
+      document.getElementById("confirm-hint").textContent = t.showNumber;
+      document.getElementById("new-order-btn").textContent = t.newOrder;
+      resetOrder();
+      showScreen("confirm");
+      // Auto return after 20s
+      setTimeout(() => {
+        if (document.getElementById("confirm").classList.contains("active")) {
+          showScreen("welcome");
+        }
+      }, 20000);
+    }
+
+    // ========== ADMIN ==========
+    function openAdminLogin() {
+      pinBuffer = "";
+      pinAttempts = 0;
+      updatePinDisplay();
+      document.getElementById("pin-error").textContent = "";
+      showScreen("admin-login");
+    }
+
+    function updatePinDisplay() {
+      const dots = document.querySelectorAll("#pin-display .pin-dot");
+      dots.forEach((d, i) => d.classList.toggle("filled", i < pinBuffer.length));
+    }
+
+    function handlePinKey(key) {
+      if (Date.now() < pinLockedUntil) {
+        document.getElementById("pin-error").textContent = "Too many attempts. Try later.";
+        return;
+      }
+      if (key === "clear") {
+        pinBuffer = "";
+      } else if (key === "ok") {
+        if (pinBuffer === config.pin) {
+          adminSession = true;
+          pinBuffer = "";
+          pinAttempts = 0;
+          loadAdminForms();
+          showScreen("admin");
+        } else {
+          pinAttempts++;
+          pinBuffer = "";
+          if (pinAttempts >= 5) {
+            pinLockedUntil = Date.now() + 60000;
+            document.getElementById("pin-error").textContent = "Locked for 60 seconds";
+          } else {
+            document.getElementById("pin-error").textContent = `Incorrect PIN (${5 - pinAttempts} left)`;
+          }
+        }
+      } else if (pinBuffer.length < 4) {
+        pinBuffer += key;
+      }
+      updatePinDisplay();
+      if (pinBuffer.length === 4 && key !== "ok" && key !== "clear") {
+        // Auto-submit on 4 digits
+        setTimeout(() => handlePinKey("ok"), 200);
+      }
+    }
+
+    function loadAdminForms() {
+      document.getElementById("cfg-name").value = config.name;
+      document.getElementById("cfg-tagline").value = config.tagline;
+      document.getElementById("cfg-logo").value = config.logo;
+      document.getElementById("cfg-primary").value = config.primary;
+      document.getElementById("cfg-primary-hex").value = config.primary;
+      document.getElementById("cfg-secondary").value = config.secondary;
+      document.getElementById("cfg-secondary-hex").value = config.secondary;
+      document.getElementById("cfg-tax").value = config.taxRate;
+      document.getElementById("cfg-currency").value = config.currency;
+      document.getElementById("cfg-idle").value = config.idleTimeout;
+      document.getElementById("cfg-order-prefix").value = config.orderPrefix;
+      document.getElementById("cfg-pin").value = "";
+      document.getElementById("cfg-pin-confirm").value = "";
+      renderAdminItems();
+    }
+
+    function renderAdminItems() {
+      const list = document.getElementById("admin-item-list");
+      list.innerHTML = config.items.map(item => `
+        <div class="admin-item">
+          <div style="font-size:2rem;">${item.emoji || "🍽️"}</div>
+          <div class="admin-item-info">
+            <strong>${sanitize(item.name)}</strong>
+            <div style="color:#94a3b8;font-size:0.9rem;">${formatMoney(item.price)} · ${item.category} ${item.available ? "" : "(Unavailable)"}</div>
+          </div>
+          <div class="admin-item-actions">
+            <button class="btn-outline" style="min-height:40px;padding:0 12px;color:#94a3b8;border-color:#475569;" data-edit="${item.id}">Edit</button>
+            <div class="toggle ${item.available ? "on" : ""}" data-toggle="${item.id}" title="Available"></div>
+          </div>
+        </div>
+      `).join("");
+
+      list.querySelectorAll("[data-edit]").forEach(btn => {
+        btn.addEventListener("click", () => openEditItem(btn.dataset.edit));
+      });
+      list.querySelectorAll("[data-toggle]").forEach(tog => {
+        tog.addEventListener("click", () => {
+          const item = config.items.find(i => i.id === tog.dataset.toggle);
+          if (item) {
+            item.available = !item.available;
+            saveConfig();
+            renderAdminItems();
+          }
+        });
+      });
+    }
+
+    function openEditItem(id) {
+      editingItemId = id;
+      const item = id ? config.items.find(i => i.id === id) : null;
+      document.getElementById("edit-item-title").textContent = item ? "Edit Item" : "Add Item";
+      document.getElementById("ei-name").value = item ? item.name : "";
+      document.getElementById("ei-desc").value = item ? (item.desc || "") : "";
+      document.getElementById("ei-price").value = item ? item.price : "";
+      document.getElementById("ei-emoji").value = item ? (item.emoji || "") : "";
+      document.getElementById("ei-badge").value = item ? (item.badge || "") : "";
+      document.getElementById("ei-available").checked = item ? item.available : true;
+      document.getElementById("ei-modifiers").value = item ? JSON.stringify(item.modifiers || [], null, 2) : "[]";
+
+      const sel = document.getElementById("ei-category");
+      sel.innerHTML = config.categories.map(c =>
+        `<option value="${c.id}" ${item && item.category === c.id ? "selected" : ""}>${sanitize(c.name)}</option>`
+      ).join("");
+
+      document.getElementById("edit-item-modal").classList.add("active");
+    }
+
+    function saveEditItem() {
+      const name = document.getElementById("ei-name").value.trim();
+      if (!name) {
+        showToast("Name is required");
+        return;
+      }
+      const price = parseFloat(document.getElementById("ei-price").value);
+      if (isNaN(price) || price < 0) {
+        showToast("Invalid price");
+        return;
+      }
+      let modifiers = [];
+      try {
+        modifiers = JSON.parse(document.getElementById("ei-modifiers").value || "[]");
+        if (!Array.isArray(modifiers)) throw new Error("not array");
+      } catch {
+        showToast("Invalid modifiers JSON");
+        return;
+      }
+
+      const data = {
+        name,
+        desc: document.getElementById("ei-desc").value.trim(),
+        price,
+        category: document.getElementById("ei-category").value,
+        emoji: document.getElementById("ei-emoji").value.trim() || "🍽️",
+        badge: document.getElementById("ei-badge").value.trim(),
+        available: document.getElementById("ei-available").checked,
+        modifiers
+      };
+
+      if (editingItemId) {
+        const idx = config.items.findIndex(i => i.id === editingItemId);
+        if (idx >= 0) {
+          config.items[idx] = { ...config.items[idx], ...data };
+        }
+      } else {
+        data.id = "item-" + Date.now();
+        config.items.push(data);
+      }
+      saveConfig();
+      renderAdminItems();
+      document.getElementById("edit-item-modal").classList.remove("active");
+      showToast("Item saved");
+    }
+
+    // ========== TOAST ==========
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    // ========== i18n APPLY ==========
+    function applyLang() {
+      const t = i18n[currentLang] || i18n.en;
+      document.getElementById("start-order-btn").textContent = t.start;
+      document.getElementById("cancel-order-btn").textContent = t.cancel;
+      document.getElementById("checkout-btn").textContent = t.checkout;
+      document.querySelector(".cart-header span").textContent = t.yourOrder;
+      document.getElementById("back-to-menu").textContent = t.backMenu;
+      document.getElementById("place-order-btn").textContent = t.placeOrder;
+      document.querySelector('[data-pay="card"]').innerHTML = `<span class="icon">💳</span>${t.payCard}`;
+      document.querySelector('[data-pay="cash"]').innerHTML = `<span class="icon">💵</span>${t.payCash}`;
+      document.getElementById("idle-title").textContent = t.stillThere;
+      document.getElementById("idle-continue").textContent = t.continueOrder;
+      document.getElementById("idle-cancel").textContent = t.startOver;
+      renderCart();
+    }
+
+    // ========== EVENT BINDINGS ==========
+    function bindEvents() {
+      // Welcome
+      document.getElementById("start-order-btn").addEventListener("click", () => {
+        currentCategory = config.categories[0]?.id || null;
+        renderCategories();
+        renderItems();
+        renderCart();
+        showScreen("menu");
+      });
+
+      document.getElementById("admin-entry").addEventListener("click", openAdminLogin);
+
+      // Language
+      document.querySelectorAll(".lang-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentLang = btn.dataset.lang;
+          applyLang();
+        });
+      });
+
+      // Menu
+      document.getElementById("cancel-order-btn").addEventListener("click", () => {
+        if (cart.length && !confirm("Cancel this order?")) return;
+        resetOrder();
+        showScreen("welcome");
+      });
+
+      document.getElementById("checkout-btn").addEventListener("click", () => {
+        renderCheckout();
+        showScreen("checkout");
+      });
+
+      // Modal
+      document.getElementById("modal-close").addEventListener("click", closeModal);
+      document.getElementById("modal-cancel").addEventListener("click", closeModal);
+      document.getElementById("modal-add").addEventListener("click", () => {
+        if (!validateModifiers()) return;
+        addToCart(currentItem, { ...selectedModifiers });
+        closeModal();
+      });
+      document.getElementById("item-modal").addEventListener("click", e => {
+        if (e.target.id === "item-modal") closeModal();
+      });
+
+      // Checkout
+      document.getElementById("back-to-menu").addEventListener("click", () => showScreen("menu"));
+      document.querySelectorAll(".pay-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".pay-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedPay = btn.dataset.pay;
+        });
+      });
+      document.getElementById("place-order-btn").addEventListener("click", placeOrder);
+
+      // Confirm
+      document.getElementById("new-order-btn").addEventListener("click", () => showScreen("welcome"));
+
+      // Idle
+      document.getElementById("idle-continue").addEventListener("click", () => {
+        document.getElementById("idle-overlay").classList.remove("active");
+        resetIdleTimer();
+      });
+      document.getElementById("idle-cancel").addEventListener("click", () => {
+        document.getElementById("idle-overlay").classList.remove("active");
+        resetOrder();
+        showScreen("welcome");
+      });
+
+      // PIN pad
+      document.getElementById("pin-pad").addEventListener("click", e => {
+        const key = e.target.closest(".pin-key")?.dataset.key;
+        if (key) handlePinKey(key);
+      });
+      document.getElementById("admin-back").addEventListener("click", () => showScreen("welcome"));
+
+      // Admin tabs
+      document.querySelectorAll(".admin-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
+          document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+        });
+      });
+
+      document.getElementById("admin-logout").addEventListener("click", () => {
+        adminSession = false;
+        showScreen("welcome");
+      });
+
+      // Branding save
+      document.getElementById("save-branding").addEventListener("click", () => {
+        config.name = document.getElementById("cfg-name").value.trim() || config.name;
+        config.tagline = document.getElementById("cfg-tagline").value.trim() || config.tagline;
+        config.logo = document.getElementById("cfg-logo").value.trim() || config.logo;
+        config.primary = document.getElementById("cfg-primary").value;
+        config.secondary = document.getElementById("cfg-secondary").value;
+        saveConfig();
+        applyTheme();
+        showToast("Branding saved");
+      });
+
+      // Color sync
+      ["primary", "secondary"].forEach(c => {
+        document.getElementById("cfg-" + c).addEventListener("input", e => {
+          document.getElementById("cfg-" + c + "-hex").value = e.target.value;
+        });
+        document.getElementById("cfg-" + c + "-hex").addEventListener("change", e => {
+          let v = e.target.value;
+          if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+            document.getElementById("cfg-" + c).value = v;
+          }
+        });
+      });
+
+      // Settings
+      document.getElementById("save-settings").addEventListener("click", () => {
+        config.taxRate = parseFloat(document.getElementById("cfg-tax").value) || 0;
+        config.currency = document.getElementById("cfg-currency").value.trim() || "$";
+        config.idleTimeout = parseInt(document.getElementById("cfg-idle").value, 10) || 90;
+        config.orderPrefix = document.getElementById("cfg-order-prefix").value.trim().toUpperCase() || "A";
+        saveConfig();
+        showToast("Settings saved");
+      });
+
+      // PIN change
+      document.getElementById("save-pin").addEventListener("click", () => {
+        const p1 = document.getElementById("cfg-pin").value;
+        const p2 = document.getElementById("cfg-pin-confirm").value;
+        if (!/^\d{4}$/.test(p1)) {
+          showToast("PIN must be 4 digits");
+          return;
+        }
+        if (p1 !== p2) {
+          showToast("PINs do not match");
+          return;
+        }
+        config.pin = p1;
+        saveConfig();
+        document.getElementById("cfg-pin").value = "";
+        document.getElementById("cfg-pin-confirm").value = "";
+        showToast("PIN updated");
+      });
+
+      // Menu admin
+      document.getElementById("add-item-btn").addEventListener("click", () => openEditItem(null));
+      document.getElementById("edit-item-close").addEventListener("click", () => {
+        document.getElementById("edit-item-modal").classList.remove("active");
+      });
+      document.getElementById("edit-item-cancel").addEventListener("click", () => {
+        document.getElementById("edit-item-modal").classList.remove("active");
+      });
+      document.getElementById("edit-item-save").addEventListener("click", saveEditItem);
+
+      // Export / Import / Reset
+      document.getElementById("export-config").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "kiosk-config.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      document.getElementById("import-config").addEventListener("click", () => {
+        document.getElementById("import-file").click();
+      });
+      document.getElementById("import-file").addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const parsed = safeParseJSON(ev.target.result, null);
+          if (parsed && parsed.items && parsed.categories) {
+            config = { ...DEFAULT_CONFIG, ...parsed };
+            if (!/^\d{4}$/.test(config.pin)) config.pin = "1234";
+            saveConfig();
+            applyTheme();
+            loadAdminForms();
+            showToast("Config imported");
+          } else {
+            showToast("Invalid config file");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+      });
+
+      document.getElementById("reset-config").addEventListener("click", () => {
+        if (!confirm("Reset ALL settings and menu to defaults? This cannot be undone.")) return;
+        config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        saveConfig();
+        applyTheme();
+        loadAdminForms();
+        showToast("Reset to defaults");
+      });
+
+      // Global activity for idle
+      ["touchstart", "mousedown", "keydown", "click"].forEach(evt => {
+        document.addEventListener(evt, resetIdleTimer, { passive: true });
+      });
+
+      // Block context menu & some keys for kiosk hardening
+      document.addEventListener("contextmenu", e => e.preventDefault());
+      document.addEventListener("keydown", e => {
+        // Block F12, Ctrl+Shift+I, Ctrl+U, etc. in production kiosk (best-effort)
+        if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C")) ||
+            (e.ctrlKey && e.key === "u")) {
+          e.preventDefault();
+        }
+      });
+    }
+
+    // ========== INIT ==========
+    function init() {
+      loadConfig();
+      applyTheme();
+      applyLang();
+      bindEvents();
+      // Start on welcome
+      showScreen("welcome");
+    }
+
+    init();
+  </script>
+</body>
+</html>
